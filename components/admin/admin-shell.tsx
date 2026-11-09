@@ -39,7 +39,17 @@ function isActive(pathname: string, href: string, exact?: boolean) {
 type NavLeafItem = { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
 function flattenNavItems(items: typeof NAV_ITEMS): NavLeafItem[] {
-	return items.flatMap((item) => ("children" in item ? [...item.children] : [item])) as NavLeafItem[];
+	const result: NavLeafItem[] = [];
+	for (const item of items) {
+		if ("children" in item) {
+			for (const child of item.children) {
+				result.push(child);
+			}
+		} else {
+			result.push(item);
+		}
+	}
+	return result;
 }
 
 function getInitials(email: string) {
