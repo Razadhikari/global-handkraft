@@ -137,6 +137,8 @@ Geographic focus:
 - Denmark
 - Finland
 - Germany
+-Belgium
+
 
 Primary audience segments:
 

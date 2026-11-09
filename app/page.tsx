@@ -133,8 +133,6 @@ export default function HomePage() {
 			<SkipLink />
 			<SiteHeader />
 			<main id="main-content" className="flex-1">
-				<HeroSection secondaryCtaHref={secondaryCtaHref} secondaryCtaLabel={secondaryCtaLabel} rating={4.9} />
-
 				{highlightedCategories.length > 0 ? (
 					<section className="mx-auto max-w-7xl px-4 py-8 sm:py-12 md:py-16 sm:px-6 lg:px-8">
 						<div className="flex items-end justify-between gap-4">
@@ -210,6 +208,8 @@ export default function HomePage() {
 						})()}
 					</section>
 				) : null}
+
+				<HeroSection secondaryCtaHref={secondaryCtaHref} secondaryCtaLabel={secondaryCtaLabel} rating={4.9} />
 
 				<section className="mx-auto max-w-7xl px-4 py-8 sm:py-12 md:py-16 sm:px-6 lg:px-8">
 					<div className="flex items-end justify-between gap-4">

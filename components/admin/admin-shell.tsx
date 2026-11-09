@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Package, ShoppingCart, FileBarChart2, Tags, Star, Quote, Settings, Menu, X, LogOut, Store, ChevronDown, Landmark, CreditCard, Truck, Globe } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, FileBarChart2, Tags, Star, Quote, Settings, Menu, X, LogOut, Store, ChevronDown, Landmark, CreditCard, Truck, Globe, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ADMIN_CUSTOM_REQUESTS_TOPIC } from "@/lib/realtime-topics";
 import { SkipLink } from "@/components/skip-link";
@@ -18,7 +18,14 @@ const NAV_ITEMS = [
 	{ href: "/admin/settings/pricing-zones", label: "Pricing Zones", icon: Globe },
 	{ href: "/admin/orders", label: "Orders", icon: ShoppingCart },
 	{ href: "/admin/custom-requests", label: "Custom Orders", icon: Landmark },
-	{ href: "/admin/stripe", label: "Stripe", icon: CreditCard },
+	{
+		label: "Payments",
+		icon: Wallet,
+		children: [
+			{ href: "/admin/stripe", label: "Stripe", icon: CreditCard },
+			{ href: "/admin/vipps", label: "Vipps", icon: Wallet },
+		],
+	},
 	{ href: "/admin/reviews", label: "Reviews", icon: Star },
 	{ href: "/admin/testimonials", label: "Testimonials", icon: Quote },
 	{ href: "/admin/reports", label: "Reports", icon: FileBarChart2 },
@@ -27,6 +34,10 @@ const NAV_ITEMS = [
 
 function isActive(pathname: string, href: string, exact?: boolean) {
 	return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function flattenNavItems(items: typeof NAV_ITEMS) {
+	return items.flatMap((item) => ("children" in item ? item.children : [item]));
 }
 
 function getInitials(email: string) {
@@ -70,9 +81,41 @@ function useCustomRequestCount() {
 }
 
 function SidebarNav({ pathname, onNavigate, customRequestCount }: { pathname: string; onNavigate?: () => void; customRequestCount: { total: number; pending: number } | null }) {
+	const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
 	return (
 		<nav className="flex-1 space-y-1 px-3 py-4">
 			{NAV_ITEMS.map((item) => {
+				if ("children" in item) {
+					const groupActive = item.children.some((child) => isActive(pathname, child.href));
+					const isOpen = openGroups[item.label] ?? groupActive;
+					const GroupIcon = item.icon;
+					return (
+						<div key={item.label}>
+							<button type="button" onClick={() => setOpenGroups((prev) => ({ ...prev, [item.label]: !isOpen }))} className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${groupActive ? "text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"}`}>
+								<span className={`h-5 w-0.5 shrink-0 -ml-3 rounded-r-full transition ${groupActive ? "bg-stone-500" : "bg-transparent"}`} aria-hidden="true" />
+								<GroupIcon className={`h-4.5 w-4.5 shrink-0 ${groupActive ? "text-stone-700" : "text-slate-600 group-hover:text-slate-200"}`} />
+								<span className="flex-1 text-left">{item.label}</span>
+								<ChevronDown className={`h-4 w-4 shrink-0 text-slate-600 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+							</button>
+							{isOpen ? (
+								<div className="mt-1 space-y-1 pl-6">
+									{item.children.map((child) => {
+										const active = isActive(pathname, child.href);
+										const ChildIcon = child.icon;
+										return (
+											<Link key={child.href} href={child.href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${active ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"}`}>
+												<ChildIcon className={`h-4 w-4 shrink-0 ${active ? "text-stone-700" : "text-slate-600"}`} />
+												{child.label}
+											</Link>
+										);
+									})}
+								</div>
+							) : null}
+						</div>
+					);
+				}
+
 				const active = isActive(pathname, item.href, "exact" in item ? item.exact : false);
 				const Icon = item.icon;
 				const showBadge = item.href === "/admin/custom-requests" && customRequestCount && customRequestCount.total > 0;
@@ -100,7 +143,7 @@ export function AdminShell({ userEmail, children }: { userEmail: string; childre
 	const [supabase] = useState(() => createClient());
 	const customRequestCount = useCustomRequestCount();
 
-	const currentSection = NAV_ITEMS.find((item) => isActive(pathname, item.href, "exact" in item ? item.exact : false));
+	const currentSection = flattenNavItems(NAV_ITEMS).find((item) => isActive(pathname, item.href, "exact" in item ? item.exact : false));
 
 	const handleSignOut = async () => {
 		await fetch("/api/auth/signout", { method: "POST" });
