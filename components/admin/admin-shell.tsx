@@ -36,8 +36,10 @@ function isActive(pathname: string, href: string, exact?: boolean) {
 	return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function flattenNavItems(items: typeof NAV_ITEMS) {
-	return items.flatMap((item) => ("children" in item ? item.children : [item]));
+type NavLeafItem = { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+
+function flattenNavItems(items: typeof NAV_ITEMS): NavLeafItem[] {
+	return items.flatMap((item) => ("children" in item ? [...item.children] : [item])) as NavLeafItem[];
 }
 
 function getInitials(email: string) {
