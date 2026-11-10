@@ -74,15 +74,23 @@ export default function HomePage() {
 				products: products.filter((product) => product.categorySlug === category.slug).slice(0, 4),
 			};
 		});
-	const categoryHighlights = categoriesWithProducts.map((category) => {
-		const matchedProducts = products.filter((product) => product.categorySlug === category.slug);
-		return {
-			label: category.name,
-			slug: category.slug,
-			count: category.productCount,
-			previewImage: category.imageUrl ?? matchedProducts[0]?.image ?? "/images/temple-1.webp",
-		};
-	});
+	const CATEGORY_DISPLAY_ORDER = ["gift", "temple", "clothes", "family wear", "mandap"];
+        const categoryOrderIndex = (label: string, slug: string) => {
+                const key = `${label} ${slug}`.toLowerCase();
+                const idx = CATEGORY_DISPLAY_ORDER.findIndex((term) => key.includes(term));
+                return idx === -1 ? CATEGORY_DISPLAY_ORDER.length : idx;
+        };
+        const categoryHighlights = categoriesWithProducts
+                .map((category) => {
+                        const matchedProducts = products.filter((product) => product.categorySlug === category.slug);
+                        return {
+                                label: category.name,
+                                slug: category.slug,
+                                count: category.productCount,
+                                previewImage: category.imageUrl ?? matchedProducts[0]?.image ?? "/images/temple-1.webp",
+                        };
+                })
+                .sort((a, b) => categoryOrderIndex(a.label, a.slug) - categoryOrderIndex(b.label, b.slug));
 	const reviewFacts = [
 		{ label: "Avg. satisfaction", value: "4.9/5" },
 		{ label: "Repeat customers", value: "95%" },
@@ -164,48 +172,45 @@ export default function HomePage() {
 
 						{/* Desktop: bento showcase — one large spotlight category plus a stacked list, so the row fills the width with intent instead of trailing off into empty space */}
 						{(() => {
-							const isTemple = (category: (typeof categoryHighlights)[number]) => /temple/i.test(category.label) || /temple/i.test(category.slug);
-							const [heroCategory, ...restCategories] = [...categoryHighlights].sort((a, b) => Number(isTemple(b)) - Number(isTemple(a)) || b.count - a.count);
-							if (!heroCategory) return null;
-							return (
-								<div className="mt-8 hidden lg:grid lg:grid-cols-5 lg:gap-6">
-									<Link href={`/shop?category=${encodeURIComponent(heroCategory.slug)}`} className={`group relative flex min-h-[420px] flex-col justify-end overflow-hidden rounded-[2rem] border border-stone-200 shadow-sm transition duration-300 hover:shadow-xl ${restCategories.length > 0 ? "lg:col-span-3" : "lg:col-span-5"}`}>
-										{/* Blurred backdrop reuses the same next/image-optimized source (tiny, low-quality) instead of a second raw fetch of the full-resolution original from Supabase. */}
-										<Image src={heroCategory.previewImage} alt="" fill sizes="48px" quality={20} aria-hidden="true" className="scale-110 bg-stone-200 object-cover opacity-70 blur-2xl" />
-										<Image src={heroCategory.previewImage} alt={heroCategory.label} fill sizes="(min-width: 1024px) 60vw, 100vw" className="relative object-contain transition duration-500 group-hover:scale-105" />
-										<div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-										<div className="relative z-10 p-8">
-											<span className="inline-flex items-center rounded-full bg-brand-orange px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-white shadow-sm">{isTemple(heroCategory) ? "Signature Collection" : "Most Popular"}</span>
-											<h3 className="mt-4 text-3xl font-semibold text-white">{heroCategory.label}</h3>
-											<p className="mt-1.5 text-sm text-white/80">{heroCategory.count} products</p>
-											<span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-xs font-semibold text-[#1B365D] transition group-hover:gap-2.5">
-												Shop Collection
-												<ArrowRight className="h-3.5 w-3.5" />
-											</span>
-										</div>
-									</Link>
+                                        const [heroCategory, ...restCategories] = categoryHighlights;
+                                        if (!heroCategory) return null;
+                                        return (
+                                                <div className="mt-8 hidden lg:grid lg:grid-cols-5 lg:gap-6">
+                                                        {restCategories.length > 0 && (
+                                                                <div className="order-2 flex flex-col gap-6 lg:col-span-2">
+                                                                        {restCategories.map((category) => (
+                                                                                <Link key={category.slug} href={`/shop?category=${encodeURIComponent(category.slug)}`} className="group relative flex flex-1 items-center gap-4 overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-lg">
+                                                                                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-100">
+                                                                                                <Image src={category.previewImage} alt="" fill sizes="24px" quality={20} aria-hidden="true" className="scale-110 object-cover opacity-60 blur-lg" />
+                                                                                                <Image src={category.previewImage} alt={category.label} fill sizes="80px" className="relative object-contain transition duration-500 group-hover:scale-105" />
+                                                                                        </div>
+                                                                                        <div className="min-w-0 flex-1">
+                                                                                                <p className="font-semibold text-stone-900 group-hover:text-[#1B365D]">{category.label}</p>
+                                                                                                <p className="mt-1 text-xs text-stone-700">{category.count} products</p>
+                                                                                        </div>
+                                                                                        <ArrowRight className="h-4 w-4 shrink-0 text-stone-300 transition group-hover:translate-x-1 group-hover:text-[#1B365D]" />
+                                                                                </Link>
+                                                                        ))}
+                                                                </div>
+                                                        )}
 
-									{restCategories.length > 0 && (
-										<div className="flex flex-col gap-6 lg:col-span-2">
-											{restCategories.map((category) => (
-												<Link key={category.slug} href={`/shop?category=${encodeURIComponent(category.slug)}`} className="group relative flex flex-1 items-center gap-4 overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-lg">
-													<div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-100">
-														{/* Blurred backdrop reuses the same next/image-optimized source (tiny, low-quality) instead of a second raw fetch of the full-resolution original from Supabase. */}
-														<Image src={category.previewImage} alt="" fill sizes="24px" quality={20} aria-hidden="true" className="scale-110 object-cover opacity-60 blur-lg" />
-														<Image src={category.previewImage} alt={category.label} fill sizes="80px" className="relative object-contain transition duration-500 group-hover:scale-105" />
-													</div>
-													<div className="min-w-0 flex-1">
-														<p className="font-semibold text-stone-900 group-hover:text-[#1B365D]">{category.label}</p>
-														<p className="mt-1 text-xs text-stone-700">{category.count} products</p>
-													</div>
-													<ArrowRight className="h-4 w-4 shrink-0 text-stone-300 transition group-hover:translate-x-1 group-hover:text-[#1B365D]" />
-												</Link>
-											))}
-										</div>
-									)}
-								</div>
-							);
-						})()}
+                                                        <Link href={`/shop?category=${encodeURIComponent(heroCategory.slug)}`} className={`group relative order-1 flex min-h-[420px] flex-col justify-end overflow-hidden rounded-[2rem] border border-stone-200 shadow-sm transition duration-300 hover:shadow-xl ${restCategories.length > 0 ? "lg:col-span-3" : "lg:col-span-5"}`}>
+                                                                <Image src={heroCategory.previewImage} alt="" fill sizes="48px" quality={20} aria-hidden="true" className="scale-110 bg-stone-200 object-cover opacity-70 blur-2xl" />
+                                                                <Image src={heroCategory.previewImage} alt={heroCategory.label} fill sizes="(min-width: 1024px) 60vw, 100vw" className="relative object-contain transition duration-500 group-hover:scale-105" />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                                                                <div className="relative z-10 p-8">
+                                                                        <span className="inline-flex items-center rounded-full bg-brand-orange px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-white shadow-sm">Featured Collection</span>
+                                                                        <h3 className="mt-4 text-3xl font-semibold text-white">{heroCategory.label}</h3>
+                                                                        <p className="mt-1.5 text-sm text-white/80">{heroCategory.count} products</p>
+                                                                        <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-xs font-semibold text-[#1B365D] transition group-hover:gap-2.5">
+                                                                                Shop Collection
+                                                                                <ArrowRight className="h-3.5 w-3.5" />
+                                                                        </span>
+                                                                </div>
+                                                        </Link>
+                                                </div>
+                                        );
+                                })()}
 					</section>
 				) : null}
 
